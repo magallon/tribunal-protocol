@@ -1,0 +1,9 @@
+{
+  "rules": [
+    "This repository follows the TRIBUNAL Protocol for Agent-to-Agent QA.",
+    "If performing code auditing, security review, performance analysis, or architectural refactoring, first read docs/reviews/TEMPLATE.md for the mandatory report format.",
+    "Full protocol: docs/reviews/PROTOCOL.md",
+    "Never audit code you generated in the same session.",
+    "All audit reports go in docs/reviews/ following the naming convention: [tipo]-audit-[YYYYMMDD].md"
+  ]
+}
