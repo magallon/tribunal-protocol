@@ -1,9 +1,11 @@
 ---
+# TRIBUNAL Protocol — Agent-to-Agent QA Framework v1.1
+
 schema_version: "1.1"
 id: "security-PaymentForm-20250715-0930"
 tipo: "security"
 componente: "src/components/PaymentForm.tsx"
-severity: "high"
+max_severity: "critical"
 status: "verified"
 tags: [xss, csrf, react]
 created_at: "2025-07-15T09:30:00-06:00"
@@ -42,7 +44,7 @@ judge:
 # 🏛️ Revisión: security-PaymentForm-20250715-0930
 
 > **Componente:** `src/components/PaymentForm.tsx`  
-> **Tipo:** security | **Severidad:** high  
+> **Tipo:** security | **Severidad máxima:** critical  
 > **Estado:** verified
 
 ---
@@ -96,8 +98,8 @@ La solicitud POST a `/api/payments` no incluye un token CSRF visible. Un sitio m
 
 **Evidencia / Reproducción:**  
 ```
-La solicitud fetch() en línea 89 solo envía headers de Content-Type y Authorization.
-No se incluye X-CSRF-Token ni se lee de una cookie.
+La solicitud fetch() en línea 89 solo envía headers de Content-Type
+y Authorization. No se incluye X-CSRF-Token ni se lee de una cookie.
 ```
 
 **Sugerencia de Remediación:**  
@@ -146,11 +148,11 @@ Eliminar el `console.log` o reemplazar con un logger condicional que redacte cam
 
 ### Cambios Ejecutados
 
-| # Hallazgo | Acción Tomada          | Archivo(s) Modificado(s) | Notas |
-|:-----------|:-----------------------|:-------------------------|:------|
-| F-001      | Implementado tal cual  | `PaymentForm.tsx:47-52`  | Se agregó `DOMPurify.sanitize()` en el render de `cardholderName` |
-| F-003      | Implementado tal cual  | `PaymentForm.tsx:33`     | `maxLength={19}` + regex `/^\d{0,19}$/` en onChange |
-| F-004      | Implementado tal cual  | `PaymentForm.tsx:95`     | Reemplazado con `logger.debug()` que redacta PAN |
+| # Hallazgo | Acción Tomada         | Archivo(s) Modificado(s) | Notas |
+|:-----------|:----------------------|:-------------------------|:------|
+| F-001      | Implementado tal cual | `PaymentForm.tsx:47-52`  | Se agregó `DOMPurify.sanitize()` en el render de `cardholderName` |
+| F-003      | Implementado tal cual | `PaymentForm.tsx:33`     | `maxLength={19}` + regex `/^\d{0,19}$/` en onChange |
+| F-004      | Implementado tal cual | `PaymentForm.tsx:95`     | Reemplazado con `logger.debug()` que redacta PAN |
 
 ### Cambios Rechazados
 
@@ -192,7 +194,7 @@ El rechazo de F-002 está fundamentado en la arquitectura existente del proyecto
 ### Diagnóstico
 
 1. El Auditor generó un falso positivo (F-002) pero es justificable: no tenía visibilidad de la capa de infraestructura. No se considera negligencia.
-2. El Ejecutor no rompió funcionalidad ni layout. Las implementaciones son mínimas e invasivas solo donde es necesario.
+2. El Ejecutor no rompió funcionalidad ni layout. Las implementaciones son mínimas e invasivas solo donde es necesario. El diff del commit confirma que los cambios corresponden con lo documentado.
 3. No se detectó desviación arquitectónica. Los cambios respetan los patrones existentes del proyecto.
 4. El rechazo de F-002 está técnicamente fundamentado con referencia a código, configuración y tests existentes.
 5. El hallazgo emergente E-001 revela un punto ciego legítimo del Auditor (componente hijo fuera de scope) y fue resuelto proactivamente.
@@ -206,4 +208,4 @@ El rechazo de F-002 está fundamentado en la arquitectura existente del proyecto
 ---
 
 <!-- Fin del documento. No editar debajo de esta línea. -->
-<!-- TRIBUNAL Protocol v1.1 — https://github.com/your-org/tribunal-protocol -->
+<!-- TRIBUNAL Protocol v1.1 -->

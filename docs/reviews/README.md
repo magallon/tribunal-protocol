@@ -1,7 +1,7 @@
 # 🏛️ TRIBUNAL — Registro de Revisiones (The Ledger)
 
 > Índice auto-generado por `scripts/tribunal/update-reviews.js`  
-> Última actualización: 2026-04-02 18:32:37 UTC  
+> Última actualización: 2026-04-02 22:35:54 UTC  
 > Total de revisiones: **1**
 
 ---

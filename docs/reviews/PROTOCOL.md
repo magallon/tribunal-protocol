@@ -8,7 +8,7 @@
 
 ## ¿Qué es TRIBUNAL?
 
-**TRIBUNAL** (Tripartite Review by Independent Brainstorming Under Networked AI Layers) es un framework agnóstico de control de calidad inter-agentes para repositorios de código. Rompe la cámara de eco donde una sola IA programa y audita simultáneamente, reemplazándola con un ciclo de tres roles independientes que simulan un proceso corporativo de revisión estricta.
+**TRIBUNAL** es un framework agnóstico de control de calidad inter-agentes para repositorios de código. Rompe la cámara de eco donde una sola IA programa y audita simultáneamente, reemplazándola con un ciclo de tres roles independientes que simulan un proceso corporativo de revisión estricta.
 
 ## El Problema
 
@@ -51,7 +51,7 @@ Otra IA o sesión distinta lee el reporte de Fase 1 junto con el código fuente.
 
 ### Fase 3 — El Juez (Judge)
 
-Un modelo frontera con alto presupuesto de razonamiento. No codifica; lee las bitácoras y emite un veredicto.
+Un modelo frontera con alto presupuesto de razonamiento. No codifica; lee las bitácoras y el diff del commit del Ejecutor, y emite un veredicto.
 
 - **Produce:** Calificaciones numéricas para Auditor y Ejecutor, diagnóstico de desviación arquitectónica, evaluación de hallazgos emergentes, líneas rectoras correctivas
 - **Veredicto:** `approved` | `conditionally-approved` | `rejected` | `escalated`

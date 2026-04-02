@@ -1,15 +1,13 @@
 ---
-# ╔══════════════════════════════════════════════════════════════════╗
-# ║  TRIBUNAL Protocol — Agent-to-Agent QA Framework v1.1          ║
-# ║  Archivo de Revisión Inter-Agente                               ║
-# ╚══════════════════════════════════════════════════════════════════╝
+# TRIBUNAL Protocol — Agent-to-Agent QA Framework v1.1
+# Archivo de Revisión Inter-Agente
 
-# ── Metadatos Generales ──────────────────────────────────────────
+# ── Metadatos Generales ──
 schema_version: "1.1"
 id: ""                          # Auto-generado: [tipo]-[componente]-[YYYYMMDD]-[HHmm]
 tipo: ""                        # performance | security | accessibility | architecture | refactor
 componente: ""                  # Ruta o nombre del módulo auditado (ej. src/components/PaymentForm.tsx)
-severity: ""                    # critical | high | medium | low
+max_severity: ""                # Severidad más alta entre todos los hallazgos: critical | high | medium | low
 status: "draft"                 # draft → audited → implemented → verified | rejected
 tags: []                        # Etiquetas libres (ej. [xss, csrf, react, a11y])
 created_at: ""                  # ISO 8601: 2025-07-15T09:30:00-06:00
@@ -64,7 +62,7 @@ judge:
 # 🏛️ Revisión: `{id}`
 
 > **Componente:** `{componente}`  
-> **Tipo:** `{tipo}` | **Severidad:** `{severity}`  
+> **Tipo:** `{tipo}` | **Severidad máxima:** `{max_severity}`  
 > **Estado:** `{status}`
 
 ---
