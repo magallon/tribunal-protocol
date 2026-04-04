@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * TRIBUNAL Protocol — The Ledger
+ * TRIBUNAL Protocol v2.0 — The Ledger
  * 
  * Lee los campos YAML frontmatter de todos los archivos de revisión
  * en docs/reviews/ y genera un README.md dinámico ordenado temporalmente.
@@ -12,6 +12,8 @@
  *
  * Integración CI/CD:
  *   Agregar como post-commit hook o step en pipeline.
+ *
+ * Zero dependencies — solo usa módulos nativos de Node.js.
  */
 
 const fs = require("fs");
@@ -30,15 +32,15 @@ const IGNORED_FILES = new Set([
 ]);
 
 // ── Parser YAML Frontmatter (sin dependencias externas) ─────────
+// Soporta nesting de hasta 2 niveles (ej. executor.validation.result)
 function parseFrontmatter(content) {
   const match = content.match(/^---\s*\n([\s\S]*?)\n---/);
   if (!match) return null;
 
   const yaml = {};
   const lines = match[1].split("\n");
-  let currentKey = null;
-  let currentIndent = 0;
   let parentKey = null;
+  let grandparentKey = null;
 
   for (const line of lines) {
     // Saltar comentarios y líneas vacías
@@ -69,18 +71,34 @@ function parseFrontmatter(content) {
     else if (value === "[]") value = [];
     else if (/^\d+$/.test(value)) value = parseInt(value, 10);
 
-    // Detectar nesting (indent > 0 significa sub-objeto)
+    // Detectar nesting por nivel de indentación
     if (indent === 0) {
-      if (rawValue.trim() === "" || rawValue.trim() === "") {
-        // Es un objeto padre
+      // Nivel raíz
+      if (value === null && rawValue.trim() === "") {
         parentKey = key;
+        grandparentKey = null;
         yaml[key] = yaml[key] || {};
       } else {
         yaml[key] = value;
         parentKey = null;
+        grandparentKey = null;
       }
-    } else if (parentKey) {
-      yaml[parentKey][key] = value;
+    } else if (indent >= 4 && grandparentKey && parentKey) {
+      // Nivel 2 (ej. executor.validation.result)
+      if (!yaml[grandparentKey][parentKey]) {
+        yaml[grandparentKey][parentKey] = {};
+      }
+      yaml[grandparentKey][parentKey][key] = value;
+    } else if (indent >= 2 && parentKey) {
+      // Nivel 1 (ej. executor.model)
+      if (value === null && rawValue.trim() === "") {
+        // Sub-objeto (ej. validation:)
+        grandparentKey = parentKey;
+        parentKey = key;
+        yaml[grandparentKey][key] = yaml[grandparentKey][key] || {};
+      } else {
+        yaml[parentKey][key] = value;
+      }
     }
   }
 
@@ -89,8 +107,13 @@ function parseFrontmatter(content) {
 
 // ── Emojis y etiquetas de estado ────────────────────────────────
 const STATUS_BADGE = {
+  // v2.0 estados
   draft: "⬜ Draft",
   audited: "🔍 Audited",
+  validated: "✅ Validated",
+  blocked: "🚫 Blocked",
+  reviewed: "🏛️ Reviewed",
+  // v1.x compatibilidad
   implemented: "🔧 Implemented",
   verified: "✅ Verified",
   rejected: "❌ Rejected",
@@ -98,10 +121,20 @@ const STATUS_BADGE = {
 };
 
 const VERDICT_BADGE = {
+  // v2.0 veredictos
+  "reviewed-ok": "✅ OK",
+  "reviewed-issues": "🟡 Issues",
+  "reviewed-escalated": "⚠️ Escalated",
+  // v1.x compatibilidad
   approved: "✅ Approved",
   "conditionally-approved": "🟡 Conditionally Approved",
   rejected: "❌ Rejected",
   escalated: "⚠️ Escalated",
+};
+
+const VALIDATION_BADGE = {
+  pass: "✅ Pass",
+  fail: "❌ Fail",
 };
 
 const TYPE_EMOJI = {
@@ -183,26 +216,84 @@ function generateReadme(reviews) {
 
   // ── Tabla principal ──
   md += `## Registro Cronológico\n\n`;
-  md += `| Fecha | Tipo | Componente | Auditor | Ejecutor | Juez | Estado | Veredicto | Archivo |\n`;
-  md += `|:------|:-----|:-----------|:--------|:---------|:-----|:-------|:----------|:--------|\n`;
+  md += `| Fecha | Tipo | Componente | Checker | Maker | Validación | Estado | Judge | Archivo |\n`;
+  md += `|:------|:-----|:-----------|:--------|:------|:-----------|:-------|:------|:--------|\n`;
 
   for (const r of reviews) {
     const date = (r.created_at || "—").slice(0, 10);
     const tipo = `${TYPE_EMOJI[r.tipo] || "📋"} ${r.tipo || "—"}`;
     const comp = r.componente ? `\`${r.componente}\`` : "—";
-    const auditor = r.auditor?.model || "—";
-    const executor = r.executor?.model || "—";
-    const judge = r.judge?.model || "—";
+    const checker = r.auditor?.model || "—";
+    const maker = r.executor?.model || "—";
+    const validation = r.executor?.validation?.result
+      ? VALIDATION_BADGE[r.executor.validation.result] || r.executor.validation.result
+      : "—";
     const status = STATUS_BADGE[r.status] || r.status || "—";
-    const verdict = r.judge?.verdict
+    const judge = r.judge?.verdict
       ? VERDICT_BADGE[r.judge.verdict] || r.judge.verdict
       : "—";
     const link = `[${r.file}](./${r.file})`;
 
-    md += `| ${date} | ${tipo} | ${comp} | ${auditor} | ${executor} | ${judge} | ${status} | ${verdict} | ${link} |\n`;
+    md += `| ${date} | ${tipo} | ${comp} | ${checker} | ${maker} | ${validation} | ${status} | ${judge} | ${link} |\n`;
   }
 
   md += `\n---\n\n`;
+
+  // ── Auditorías bloqueadas (si las hay) ──
+  const blocked = reviews.filter((r) => r.status === "blocked");
+  if (blocked.length > 0) {
+    md += `## ⚠️ Auditorías Bloqueadas\n\n`;
+    md += `| Fecha | Componente | Maker | Notas | Archivo |\n`;
+    md += `|:------|:-----------|:------|:------|:--------|\n`;
+
+    for (const r of blocked) {
+      const date = (r.created_at || "—").slice(0, 10);
+      const comp = r.componente ? `\`${r.componente}\`` : "—";
+      const maker = r.executor?.model || "—";
+      const notes = r.executor?.validation?.notes || "—";
+      const link = `[${r.file}](./${r.file})`;
+
+      md += `| ${date} | ${comp} | ${maker} | ${notes} | ${link} |\n`;
+    }
+
+    md += `\n---\n\n`;
+  }
+
+  // ── Revisiones del Judge (si las hay) ──
+  const reviewed = reviews.filter((r) => r.status === "reviewed");
+  if (reviewed.length > 0) {
+    const batches = {};
+    for (const r of reviewed) {
+      const batch = r.judge?.review_batch || "sin-lote";
+      if (!batches[batch]) batches[batch] = [];
+      batches[batch].push(r);
+    }
+
+    md += `## 🏛️ Evaluaciones del Judge\n\n`;
+
+    for (const [batch, items] of Object.entries(batches)) {
+      md += `### Lote: \`${batch}\`\n\n`;
+      md += `| Componente | Checker Score | Maker Score | Veredicto | Archivo |\n`;
+      md += `|:-----------|:-------------|:------------|:----------|:--------|\n`;
+
+      for (const r of items) {
+        const comp = r.componente ? `\`${r.componente}\`` : "—";
+        const cScore = r.judge?.auditor_score != null ? `${r.judge.auditor_score}/100` : "—";
+        const mScore = r.judge?.executor_score != null ? `${r.judge.executor_score}/100` : "—";
+        const verdict = r.judge?.verdict
+          ? VERDICT_BADGE[r.judge.verdict] || r.judge.verdict
+          : "—";
+        const link = `[${r.file}](./${r.file})`;
+
+        md += `| ${comp} | ${cScore} | ${mScore} | ${verdict} | ${link} |\n`;
+      }
+
+      md += `\n`;
+    }
+
+    md += `---\n\n`;
+  }
+
   md += `*Generado automáticamente por [TRIBUNAL Protocol](./PROTOCOL.md). No editar manualmente.*\n`;
 
   return md;
